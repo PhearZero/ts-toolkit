@@ -34,9 +34,61 @@ export const standardSectionWhitelist = [
   'publishConfig',
 ]
 
-export const copyPackageJson = (inputFolder: string, outputFolder: string, main: string, types: string, customSections: string[] = []) => {
+type PackageEntryType = string | {[k: string]: any} | Array<any>
+/**
+ * Replace All Strings
+ *
+ * Takes an Object | Array and replaces all strings with the result of the replacer function
+ *
+ * @param {PackageEntryType} obj Any Object or Array
+ * @param {Function} replacer Replacer function to run on each string
+ */
+function replaceAllStrings(obj: PackageEntryType, replacer: (key: string)=>string){
+  if (Array.isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      if(typeof obj[i] === 'string'){
+        obj[i] = replacer(obj[i])
+      } else {
+        obj[i] = replaceAllStrings(obj[i], replacer);
+      }
+    }
+  }
+  else if (typeof obj === "object") {
+    for (const key in obj) {
+      if(typeof obj[key] === 'string'){
+        obj[key] = replacer(obj[key])
+      } else {
+        obj[key] = replaceAllStrings(obj[key], replacer)
+      }
+    }
+  }
+  return obj
+}
+export const copyPackageJson = (inputFolder: string, outputFolder: string, main: string, types: string, customSections: string[] = [], strip: string | undefined) => {
   const packageJson = readJson(join(inputFolder, 'package.json'))
   const sectionsToUse = [...standardSectionWhitelist, ...customSections]
+  if(typeof strip === 'string'){
+    if(typeof packageJson.main !== 'undefined'){
+      packageJson.main = packageJson.main.replace(strip, '')
+    }
+    if(typeof packageJson.types !== 'undefined'){
+      packageJson.types = packageJson.types.replace(strip, '')
+    }
+    if(typeof packageJson.module !== 'undefined'){
+      packageJson.module = packageJson.module.replace(strip, '')
+    }
+    if(typeof packageJson.typesVersions !== 'undefined'){
+      replaceAllStrings(packageJson.typesVersions, (str: string)=>{
+        return str.replace(strip, '')
+      })
+    }
+    if(typeof packageJson.exports !== 'undefined') {
+     replaceAllStrings(packageJson.exports, (str: string)=>{
+        return str.replace(strip, '')
+      })
+    }
+  }
+
   const output = { main, types, ...pick(packageJson, ...sectionsToUse) }
   writeJson(join(outputFolder, 'package.json'), output)
   console.info(`✅ package.json written to: ${outputFolder}`)

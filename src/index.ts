@@ -56,9 +56,10 @@ export function cli(workingDirectory: string, args: string[]) {
     )
     .option('-m --main <main>', 'The main field value', 'index.js')
     .option('-t --types <types>', 'The types field value', 'index.d.ts')
+    .option('-s --strip [strip]', 'Shorten path for files', )
     .option('-cs --custom-sections [value...]', 'Custom sections you wish to copy', [])
-    .action(({ inputFolder, outputFolder, main, types, customSections }) => {
-      copyPackageJson(inputFolder, outputFolder, main, types, customSections)
+    .action(({ inputFolder, outputFolder, main, types, customSections, strip }) => {
+      copyPackageJson(inputFolder, outputFolder, main, types, customSections, strip)
     })
   program.parse(args)
 }
